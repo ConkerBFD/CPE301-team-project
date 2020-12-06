@@ -70,12 +70,10 @@ void adc_write();
 
 setup(){
   state = 'D'; // at Disabled state by default.
-  //we must decide our threshold and minimum water values
-  //we must decide the addresses for our outputs and inputs
   *myDDRA |= 0xF0; //set pins 26-29 to outputs for the LEDs
   *myDDRA &= 0xFE; //set pin 22 to input for the push button
   *port_a |= 0x01; //enable pullup resistor on pin 22
-  *myDDRB |= 0x01; //set pin 53 to output for the motor
+  *myDDRB |= 0x07; //set pin 53, 52, and 51 to output for the motor. connect to 
   Serial.begin(9600);
   lcd.begin(16,2);
   rtc.begin();
