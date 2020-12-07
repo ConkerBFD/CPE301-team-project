@@ -10,21 +10,28 @@
 #include <Servo.h>
 
 
+// Button returns for button_press function
 #define DISABLE 0
 #define VENT_UP 1
 #define VENT_DOWN 2
 
+// DHT11 Type and Pin
 #define DHT_SENSOR_TYPE DHT_TYPE_11
 static const unsigned int DHT_SENSOR_PIN = 12;
 
-DHT_nonblocking dht_sensor( DHT_SENSOR_PIN, DHT_SENSOR_TYPE );
-Servo myservo;
 
-// Clock variables
-DS3231 clock;
-RTCDateTime now;
+// Elegoo Starter Kit Library Objects
+DHT_nonblocking dht_sensor( DHT_SENSOR_PIN, DHT_SENSOR_TYPE );  // Set temp sensor based on info define above.
+Servo myservo;                                                  // Servo motor interface object
+DS3231 clock;                                                   // RTC Module Interface object
+RTCDateTime now;                                                // Date time contained, used when printing motor timestamp
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);                            // LCD pins, RS to 8, E to pin 9, pins 4-7 to D4-D7
 
 
+/*
+ *  Microcontroller Addresses
+ */
+ 
 // Port A Addresses
 volatile unsigned char *port_a = (unsigned char *) 0x22;
 volatile unsigned char *myDDRA = (unsigned char *) 0x21;
@@ -42,17 +49,13 @@ volatile unsigned char *myADMUX = (unsigned char*) 0x7C;
 volatile unsigned int *my_ADC_DATA = (unsigned int*) 0x78;
 unsigned char bits_ADMUX[8] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
 
-// Serial Addresses
-volatile unsigned char *myUCSR0A = (unsigned char *)0x00C0;
-volatile unsigned char *myUCSR0B = (unsigned char *)0x00C1;
-volatile unsigned char *myUCSR0C = (unsigned char *)0x00C2;
-volatile unsigned int  *myUBRR0  = (unsigned int *) 0x00C4;
-volatile unsigned char *myUDR0   = (unsigned char *)0x00C6;
 
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7);      //RS to 8, E to pin 9, pins 4-7 to D4-D7
-
+/*
+ *  Global variables
+ */
+ 
 //character variable that decides which state the program is in, defaults to Disabled
-unsigned char state;
+unsigned char state = 'D';
 
 // Temp threshold and current temp
 float temp_threshold = 20;
@@ -64,37 +67,42 @@ unsigned int water_threshold = 170;
 unsigned int current_water = 0;
 unsigned int vent_angle = 90;
 
-//days for rtc
+// Days for rtc
 const char day[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
-//each of the following functions is a state of the machine, will change the state variable within.
-unsigned char Disabled(); //unsure if we need to pass in anything in
+
+/* 
+ *  Function Prototypes
+ */
+
+// State functions
+void Disabled();
 void Idle();
 void Runnung();
 void Error();
 
-//functions to help with the operation
+// Global helper functions
 int button_press();
-void all_state(); //functionally for most of the states
+void all_state();
 void timestamp();
 
-//analog functions
+// Analog functions
 void adc_init();
 unsigned int adc_read(unsigned char adc_channel);
 void adc_write();
 
+// Initialize items to run within the program.
 void setup(){
-  state = 'D'; // at Disabled state by default.
-  *myDDRA |= 0xF0; //set pins 26-29 to outputs for the LEDs
-  *myDDRA &= 0xF8; //set pin 22 to input for the push button
-  *port_a |= 0x07; //enable pullup resistor on pins 22, 23, 24
-  *pin_b |= 0x04; // Set the L293D chip to single direction
-  *myDDRB |= 0x07; //set pin 53, 52, and 51 to output for the motor. connect to 
-
-  adc_init();
+  *myDDRA |= 0xF0; // Set pins 26-29 to outputs for the LEDs
+  *myDDRA &= 0xF8; // Set pin 22, 23, and 24 to input for the push buttons
+  *port_a |= 0x07; // Enable pullup resistor on pins 22, 23, and 24
+  *pin_b |= 0x04;  // Set the L293D chip to single direction
+  *myDDRB |= 0x07; // Set pin 53, 52, and 51 to output for the motor.
   
-  Serial.begin(9600);
+  adc_init(); // Initialize Analog conversion registers
+  Serial.begin(9600); // Initialize baud to 9600
 
+  // Initialize Elegoo Library object's pins and settings.
   myservo.attach(3);
   myservo.write(90);
   lcd.begin(16,2);
@@ -102,7 +110,7 @@ void setup(){
 }
 
 void loop(){
-  switch(state){ //takes in the state character and changes states accordingly
+  switch(state){ // Takes in the state character and changes states accordingly.
     // Since we default to disabled, we don't need a case for D, we can just use default.
     case 'I':
       Idle();
@@ -114,17 +122,21 @@ void loop(){
       Error();
       break;
     default:
-      Disabled(); // Fail-safe, sets to Disabled state
+      Disabled();
       break;
     }
   }
 
+// Button controller function, returns value based on which button is pressed, returns -1 if no button is pressed.
 int button_press(){
+  
+  // Check if disable button is pressed
   if((*pin_a & 0x01)){
     while (*pin_a&0x01) {}
     return DISABLE; // Returns true if button is pressed
   }
-  
+
+  // Check if vent-down button is pressed
   if((*pin_a & 0x02)){
     while (*pin_a&0x02) {
       Serial.print("Moving down ");
@@ -133,8 +145,9 @@ int button_press(){
    }
     return VENT_UP; // Returns true if button is pressed
   }
-  
- if((*pin_a & 0x04)){
+
+  // Check if vent-up button is pressed
+  if((*pin_a & 0x04)){
     while (*pin_a&0x04) {
       Serial.print("Moving up ");
       Serial.println(vent_angle);
@@ -143,27 +156,26 @@ int button_press(){
     return VENT_DOWN; // Returns true if button is pressed
   }
   
-  return -1; //returns false if the button has not been properly pressed
+  return -1; //returns -1 if no buttons have been pressed.
 }
       
-//This is the common functionallity of most of the states in this system
+// This is the common functionallity of all states in this system
 void all_state(){
   
-  // Check if the disable button has been pressed, if it has, return early so the program doesnt update and change states again.
+  // Check if the disable button has been pressed, and handle vent manipulation
   if (button_press() == DISABLE){
     state = (state == 'D' ? 'I' : 'D');
     return;
   }
-  
+
+  // Measure temp, humidity, and water level every 4 seconds, and update LCD if new data has been read.
   if (measure_environment(&current_temp, &humidity)){
     print_lcd_data();
     current_water = adc_read(0);
   }
-  
-  //vent position manipulation
-  
 }
 
+// Print Errors, Disabled information, and running information to LCD screen based on current state.
 void print_lcd_data(){
   lcd.clear();
   lcd.setCursor(0,0);
@@ -187,6 +199,7 @@ void print_lcd_data(){
   }
 }
 
+// Print the current time to the serial monitor.
 void timestamp(){
   now = clock.getDateTime();
   
@@ -225,7 +238,8 @@ void timestamp(){
     Serial.print(" pm");
   }
 }
-      
+
+// Initialize analog conversion registers.
 void adc_init(){
   *myADCSRA |= 0x80;
   *myADCSRA &= 0xD0;
@@ -235,6 +249,7 @@ void adc_init(){
   *myADMUX &= 0xC0;
 }
 
+// Read and convert analog data from the given channel.
 unsigned int adc_read(unsigned char adc_channel){
   *myADMUX &= 0xE0;
   *myADCSRB &= 0xF7;
@@ -250,27 +265,25 @@ unsigned int adc_read(unsigned char adc_channel){
   while((*myADCSRA & 0x40)!=0);
   return *my_ADC_DATA;
 }
-      
-unsigned char Disabled(){
+
+void Disabled(){
   *pin_a |= 0x80;    //activate yellow LED (pin 29)
   
   while(state == 'D')
     all_state();
     
   *port_a &= 0x7F;    //deactivate yellow LED
-  state = 'I';          //returns I so that it can move to the Idle state
 }
       
 void Idle(){
   *pin_a |= 0x40;       //activate green LED (pin 28)
-  unsigned int change = 0; //checks if the state needs to change
   while(state == 'I')
   {
     all_state();
-    if(current_water<water_threshold)
+    if(current_water<water_threshold) // If water level is too low, send error signal.
       state = 'E';
     
-    if(current_temp > temp_threshold)
+    if(current_temp > temp_threshold) // If temp is too high, start motors. 
       state = 'R';
   }
   *port_a &= 0xBF; //deactivate green LED
@@ -280,38 +293,37 @@ void Running(){
   *pin_a |= 0x20;  //activate blue LED (pin 27)
   *pin_b |= 0x01;  //activate motor on pin 53
 
-  
+  // Print "Motor on" timestamp to serial monitor.
   Serial.print("Motor turned on: ");
-  timestamp();      //timestamp for motor turning on
+  timestamp();
   Serial.println();
   
-  unsigned int change=0; //checks if the state needs to change
   while(state == 'R') {
     all_state();
     
-    if(current_water < water_threshold)
+    if(current_water < water_threshold) // If water level is too low, send error signal.
       state = 'E';
    
-    if(current_temp < temp_threshold)
+    if(current_temp < temp_threshold) // If temp goes too low, change to Idle state.
       state = 'I';
   
   }
   
   *port_a &= 0xDF;  //deactivate blue LED
   *port_b &= 0xFE;  //deactivate motor
-  
+
+  // Print "Motor off" timestamp
   Serial.print("Motor turned off: ");
-  timestamp();      //timestamp for motor turning off
+  timestamp();
   Serial.println();
 }
-      
+
 void Error(){
   *pin_a |= 0x10;  //activate red LED (pin 26)
-  lcd.setCursor(0,0);
-  lcd.print("Error: Water Low");//display error message on LCD screen
-  while(current_water < water_threshold){
+  
+  while(current_water < water_threshold) // Continue displaying error message till water returns to safe level.
     all_state();
-  }
+  
   state = 'I';        //return to idle once water is above minimum
   *port_a &= 0xEF;  //deactivate red LEd
 }
@@ -327,12 +339,12 @@ static bool measure_environment( float *temperature, float *humidity )
   /* Measure once every four seconds. */
   if( millis( ) - measurement_timestamp > 3000ul)
   {
-    if( dht_sensor.measure( temperature, humidity ) == true )
+    if( dht_sensor.measure( temperature, humidity ) == true ) // If the measurement is successful, change measurement timestamp and return true
     {
       measurement_timestamp = millis( );
       return( true );
     }
   }
-
+  // If measurement is unsuccessful, return false.
   return( false );
 }
