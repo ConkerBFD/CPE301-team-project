@@ -10,14 +10,14 @@ Evaporation Cooler project programmed and designed by Gavin Farrell & Alan Garci
 - Space Requirement: 25cm X 28cm X 16cm
 
 ### Components Used
-- [Mega 2560 Microcontroller](https://ww1.microchip.com/downloads/en/devicedoc/atmel-2549-8-bit-avr-microcontroller-atmega640-1280-1281-2560-2561_datasheet.pdf)
-- [DHT11 Humidity Sensor](https://www.mouser.com/datasheet/2/758/DHT11-Technical-Data-Sheet-Translated-Version-1143054.pdf)
-- [DS1307 RTC Module](https://datasheets.maximintegrated.com/en/ds/DS1307.pdf)
-- [Servo Motor SG90](http://www.ee.ic.ac.uk/pcheung/teaching/DE1_EE/stores/sg90_datasheet.pdf)
-- [L293D Chip](https://www.ti.com/lit/ds/symlink/l293.pdf)
-- [Water Level Sensor Module](https://www.emartee.com/Attachment.php?name=42240.pdf)
-- [LCD1602 Module](https://www.sparkfun.com/datasheets/LCD/ADM1602K-NSA-FBS-3.3v.pdf)
-- [10k Potentiometer](https://components101.com/potentiometer)
+- [Mega 2560 Microcontroller](https://ww1.microchip.com/downloads/en/devicedoc/atmel-2549-8-bit-avr-microcontroller-atmega640-1280-1281-2560-2561_datasheet.pdf) x1
+- [DHT11 Humidity Sensor](https://www.mouser.com/datasheet/2/758/DHT11-Technical-Data-Sheet-Translated-Version-1143054.pdf) x1
+- [DS1307 RTC Module](https://datasheets.maximintegrated.com/en/ds/DS1307.pdf) x1
+- [Servo Motor SG90](http://www.ee.ic.ac.uk/pcheung/teaching/DE1_EE/stores/sg90_datasheet.pdf) x1
+- [L293D Chip](https://www.ti.com/lit/ds/symlink/l293.pdf) x1
+- [Water Level Sensor Module](https://www.emartee.com/Attachment.php?name=42240.pdf) x1
+- [LCD1602 Module](https://www.sparkfun.com/datasheets/LCD/ADM1602K-NSA-FBS-3.3v.pdf) x1 
+- [10k Potentiometer](https://components101.com/potentiometer) x1
 - LEDs x4
 - Buttons x3
 - 330 Ohms Resistor x3
