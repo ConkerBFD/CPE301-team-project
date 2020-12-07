@@ -24,3 +24,4 @@ Evaporation Cooler project programmed and designed by Gavin Farrell & Alan Garci
 
 ### Testing the system
 This evaporation cooler is best used in an open room at room temperature and low humidity (20-35%). The open room meets the space requirements and the room temperature meets operating temperature standards. To meet voltage and current standards, the breadboard should simply be connected to any of the Mega2560's 5V power and ground pins. Partially submerge the water level sensor in the reservoir, and position the fan so that it will direct evaporating water towards the vent. After connecting the Mega2560 to power, simply press the disable button, which is the first of the 3 buttons, and ensure that your water reservoir stays full. Adjusting system vents can be done by using the two buttons after the disable button, they raise and lower fan angle respectively.
+![Project Setup](https://github.com/ConkerBFD/CPE301-team-project/blob/main/images/project_setup.jpg)
