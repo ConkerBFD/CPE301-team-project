@@ -203,7 +203,7 @@ void print_lcd_data(){
 void timestamp(){
   now = clock.getDateTime();
   
-  Serial.print(day[now.day]);
+  Serial.print(day[now.dayOfWeek]);
   Serial.print(" ");
   Serial.print(now.month, DEC);
   Serial.print("/");
